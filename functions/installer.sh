@@ -3,7 +3,8 @@
 homebrew_install() {
   echo "Installing homebrew..."
   if [ ! -f /usr/local/bin/brew ]; then
-    ruby -e "$(\curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    #ruby -e "$(\curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
     brew tap homebrew/cask-versions
   else
     echo "Homebrew already installed. So far, so good."
