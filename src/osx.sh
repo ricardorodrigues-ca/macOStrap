@@ -13,9 +13,9 @@ echo
 
 # OSX version requirement
 SW_VERS=$(sw_vers -productVersion)
-if [[ ! $(echo $SW_VERS | egrep '10.(13)')  ]]
+if [[ ! $(echo $SW_VERS | egrep '10.(15)')  ]]
 then
-    echo "The script requires macOS 10.13.X (High Sierra) to run. You are running version $SW_VERS"
+    echo "The script requires macOS 10.15.X (Catalina) to run. You are running version $SW_VERS"
     exit 1
 fi
 
