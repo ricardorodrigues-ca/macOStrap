@@ -72,8 +72,6 @@ show_main_menu() {
       firefox-developer-edition "Firefox (Developer-Edition)" off\
       iterm2 "iTerm2 - the better terminal" off \
       intellij-idea "IntelliJ IDEA" off \
-      java "Java (most recent)" off \
-      java8 "Java 8" off \
       macdown "MacDown - A MarkDown Editor" off \
       postman "Postman - API Testing Tool" off \
       psequel "pSequel - PostgreSQL Client" off \
