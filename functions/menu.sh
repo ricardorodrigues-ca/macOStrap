@@ -59,7 +59,7 @@ show_main_menu() {
 
   elif [[ "$choice" == *"Apps"* ]]; then
     apps=$(whiptail --separate-output --title "Apps" --checklist "\nSelect the apps you want to install:\n\n[spacebar] = toggle on/off\n[tab] = switch to Buttons / List" 0 0 0 --cancel-button Back --ok-button Install \
-      1password6 "1Password 6 Password Manager" off \
+      1password "1Password Password Manager" off \
       atom "Atom Text Editor" off \
       bettertouchtool "BetterTouchTool (Window Snapping)" off \
       caffeine "Caffeine (Disable System sleep)" off \
@@ -72,12 +72,12 @@ show_main_menu() {
       firefox-developer-edition "Firefox (Developer-Edition)" off\
       iterm2 "iTerm2 - the better terminal" off \
       intellij-idea "IntelliJ IDEA" off \
-      java "Java (most recent)" off \
-      java8 "Java 8" off \
+      temurin "Java (most recent)" off \
+      temurin "Java 8 (OpenJDK)" off \
       macdown "MacDown - A MarkDown Editor" off \
       postman "Postman - API Testing Tool" off \
       psequel "pSequel - PostgreSQL Client" off \
-      sequel-pro "Sequel Pro - mySQL Client" off \
+      sequel-ace "Sequel Ace - MySQL/MariaDB Client" off \
       slack "Slack" off \
       spotify "Spotify" off \
       tunnelblick "Tunnelblick VPN" off \
@@ -95,7 +95,7 @@ show_main_menu() {
       while read -r line; do
         echo -e "$line" >> $CASKFILE
       done <<< "$apps"
-      brew cask list $(cat $CASKFILE|grep -v "#") &>/dev/null || brew cask install $(cat $CASKFILE|grep -v "#")
+      brew list --cask $(cat $CASKFILE|grep -v "#") &>/dev/null || brew install --cask $(cat $CASKFILE|grep -v "#")
     fi
 
     if [ $? -eq 1 ] || [ $? -eq 255 ]; then return 0; fi
@@ -113,7 +113,7 @@ show_main_menu() {
       mas "Mac App Store command-line interface" off \
       maven "Java-based project management" off \
       nvm "Manage multiple Node.js versions" off \
-      openssl "SSL/TLS cryptography library" off \
+      openssl@3 "Cryptography and SSL/TLS Toolkit" off \
       php "PHP (most recent)" off \
       phpmyadmin "Web interface for MySQL and MariaDB" off \
       sqlite "Command-line interface for SQLite" off \
