@@ -11,11 +11,11 @@ cat $BASEDIR/src/logo
 
 echo
 
-# OSX version requirement
+# macOS version requirement
 SW_VERS=$(sw_vers -productVersion)
-if [[ ! $(echo $SW_VERS | egrep '10.(15)')  ]]
+if [[ ! $(echo $SW_VERS | egrep '1[1-9]\.|[2-9][0-9]\.')  ]]
 then
-    echo "The script requires macOS 10.15.X (Catalina) to run. You are running version $SW_VERS"
+    echo "The script requires macOS 11.0+ (Big Sur) to run. You are running version $SW_VERS"
     exit 1
 fi
 
@@ -48,10 +48,9 @@ fi
 
 whiptail_install
 
-echo "Creating directories for brew/cask files"
+echo "Ensuring config directory exists"
 
-mkChkDir brew
-mkChkDir cask
+mkChkDir config
 
 while show_main_menu; do
     true

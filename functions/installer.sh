@@ -26,39 +26,85 @@ whiptail_install() {
   fi
 }
 
-rvm_install() {
-  mkdir -p ~/.rvm/src && cd ~/.rvm/src && rm -rf ./rvm && \
-  git clone --depth 1 https://github.com/rvm/rvm.git && \
-  cd rvm && ./install
-  source ~/.rvm/scripts/rvm
+mas_install() {
+  echo "Installing Mac App Store CLI..."
+  if ! command -v mas &> /dev/null; then
+    brew install mas
+  else
+    echo "mas already installed. Going on..."
+  fi
 }
 
-zsh_install() {
-  # Symlink macOStraps .zshrc to your $HOME
-  ln -s $BASEDIR/dotfiles/.zshrc ~/.zshrc
-
-  # Install zsh and zplug
-  brew install zsh zplug
-  echo
-  echo "+––––––––––––––––+"
-  echo "| PLEASE NOTICE! |"
-  echo "+––––––––––––––––+"
-  echo
-  echo "We are about to add brews zsh to your /etc/shells and activate zsh for the"
-  echo "first time."
-  echo "For this we need superuser privileges."
-  echo
-
-  # Add brew zsh to /etc/shells and switch default-shell
-  if [ ! "grep -Fx $(echo $( which zsh )) /etc/shells" ]; then
-    echo "Adding /usr/local/bin/zsh to /etc/shells"
-    sudo /bin/sh -c '/usr/local/bin/zsh >> /etc/shells'
+install_from_config() {
+  local config_file="$1"
+  local install_function="$2"
+  
+  if [[ -f "$config_file" ]]; then
+    while IFS='|' read -r package display_name description; do
+      # Skip comments and empty lines
+      [[ "$package" =~ ^#.*$ ]] && continue
+      [[ -z "$package" ]] && continue
+      
+      $install_function "$package" "$display_name" "$description"
+    done < "$config_file"
   fi
+}
 
-  chsh -s /usr/local/bin/zsh
+install_cask_app() {
+  local package="$1"
+  echo "Installing $package via homebrew cask..."
+  brew install --cask "$package" 2>/dev/null || echo "Failed to install $package"
+}
 
-  # Install fzf fuzzy completion
-  brew install fzf && $(brew --prefix)/opt/fzf/install
+install_brew_package() {
+  local package="$1"
+  echo "Installing $package via homebrew..."
+  brew install "$package" 2>/dev/null || echo "Failed to install $package"
+}
 
-  exec zsh
+install_mas_app() {
+  local app_id="$1"
+  local display_name="$2"
+  echo "Installing $display_name via Mac App Store..."
+  mas install "$app_id" 2>/dev/null || echo "Failed to install $display_name"
+}
+
+install_font() {
+  local package="$1"
+  echo "Installing $package..."
+  brew install --cask "$package" 2>/dev/null || echo "Failed to install $package"
+}
+
+install_special_package() {
+  local package="$1"
+  local display_name="$2"
+  local description="$3"
+  local install_cmd="$4"
+  echo "Installing $display_name..."
+  eval "$install_cmd" 2>/dev/null || echo "Failed to install $display_name"
+}
+
+install_direct_download() {
+  local name="$1"
+  local display_name="$2" 
+  local description="$3"
+  local url="$4"
+  local install_cmd="$5"
+  
+  echo "Installing $display_name..."
+  
+  if [[ "$install_cmd" == npm* ]]; then
+    # For npm packages, just run the install command
+    eval "$install_cmd" 2>/dev/null || echo "Failed to install $display_name"
+  else
+    # For downloads, get the file first
+    local filename=$(basename "$url")
+    curl -L -o "/tmp/$filename" "$url" 2>/dev/null
+    if [[ -f "/tmp/$filename" ]]; then
+      cd /tmp && eval "$install_cmd" 2>/dev/null || echo "Failed to install $display_name"
+      rm -f "/tmp/$filename"
+    else
+      echo "Failed to download $display_name"
+    fi
+  fi
 }

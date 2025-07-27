@@ -5,12 +5,15 @@ set -u
 # SETUP VARS
 DOTFILEDIR="$BASEDIR/dotfiles"
 
-BREWFILE="$BASEDIR/brew/Brewfile"
-CASKFILE="$BASEDIR/cask/Caskfile"
+CONFIGDIR="$BASEDIR/config"
+CASKFILE="$CONFIGDIR/cask-apps.conf"
+BREWFILE="$CONFIGDIR/brew-packages.conf"
+MASFILE="$CONFIGDIR/mas-apps.conf"
+FONTSFILE="$CONFIGDIR/fonts.conf"
+SPECIALFILE="$CONFIGDIR/special-packages.conf"
+DIRECTFILE="$CONFIGDIR/direct-downloads.conf"
 
 BREW=/usr/local/bin/brew
-
-
 
 show_about() {
   whiptail --title "About macOStrap" --msgbox "
@@ -24,10 +27,13 @@ show_main_menu() {
   choice=$(whiptail --title "Welcome to macOStrap" --menu "\nSelect what you want to do" 0 0 0 --cancel-button Exit --ok-button Execute \
   "About macOStrap"    "Information about the macOStrap tool" \
   "" "" \
-  "Terminal" "Install ZSH & ZSH Configs ►"\
-  "Apps"      "Select apps to install via brew-cask ►" \
-  "Brew Packages"      "Select brew packages ►" \
-  "Components & Configs"      "Select additional components & configs to install ►" \
+  "GUI Apps" "Install applications via homebrew cask ►"\
+  "CLI Tools"      "Install command-line tools via homebrew ►" \
+  "Mac App Store"      "Install apps from Mac App Store ►" \
+  "Fonts"      "Install programming fonts ►" \
+  "Special Packages"      "Install packages requiring special taps ►" \
+  "Direct Downloads"      "Install tools via direct download ►" \
+  "Terminal Config" "Install iTerm2 themes & macOS defaults ►"\
   3>&1 1>&2 2>&3)
   RET=$?
   if [ $RET -eq 1 ] || [ $RET -eq 255 ]; then
@@ -42,108 +48,211 @@ show_main_menu() {
   elif [[ "$choice" == *"About"* ]]; then
     show_about
 
-  elif [[ "$choice" == *"Terminal"* ]]; then
-    additionalCompsConf=$(whiptail --title "Additional Components & Configurations" --menu "\nSelect the components and configs you want to install:\n\n[enter] = install\n[tab] = switch to Buttons / List" 0 0 0 --cancel-button Back --ok-button Install \
-    "zsh    "     "Install ZSH, zPlug & .zshrc" \
+  elif [[ "$choice" == *"GUI Apps"* ]]; then
+    show_cask_selection
+
+  elif [[ "$choice" == *"CLI Tools"* ]]; then
+    show_brew_selection
+
+  elif [[ "$choice" == *"Mac App Store"* ]]; then
+    show_mas_selection
+
+  elif [[ "$choice" == *"Fonts"* ]]; then
+    show_fonts_selection
+
+  elif [[ "$choice" == *"Special Packages"* ]]; then
+    show_special_packages_selection
+
+  elif [[ "$choice" == *"Direct Downloads"* ]]; then
+    show_direct_downloads_selection
+
+  elif [[ "$choice" == *"Terminal Config"* ]]; then
+    terminalConfig=$(whiptail --title "Terminal Configuration" --menu "\nSelect the configuration you want to install:\n\n[enter] = install\n[tab] = switch to Buttons / List" 0 0 0 --cancel-button Back --ok-button Install \
     "iterm2    "    "Install iTerm2 themes & config"\
     "mac defaults    "    "Change mac defaults (e.g. show the ~/Library/ Folder)"\
     3>&1 1>&2 2>&3)
     if [ $? -eq 1 ] || [ $? -eq 255 ]; then return 0; fi
-    case "$additionalCompsConf" in
-      zsh\ *) zsh_install;;
+    case "$terminalConfig" in
       iterm2\ *) sh "$BASEDIR/mac/iterm2_install.sh";;
       mac\ *) sh "$BASEDIR/mac/mac_install.sh";;
       "") return ;;
-      *) whiptail --msgbox "A not supported option was selected (probably a programming error):\\n  \"$additionalCompsConf\"" 8 80 ;;
+      *) whiptail --msgbox "A not supported option was selected (probably a programming error):\\n  \"$terminalConfig\"" 8 80 ;;
     esac
+  fi
+}
 
-  elif [[ "$choice" == *"Apps"* ]]; then
-    apps=$(whiptail --separate-output --title "Apps" --checklist "\nSelect the apps you want to install:\n\n[spacebar] = toggle on/off\n[tab] = switch to Buttons / List" 0 0 0 --cancel-button Back --ok-button Install \
-      1password6 "1Password 6 Password Manager" off \
-      atom "Atom Text Editor" off \
-      bettertouchtool "BetterTouchTool (Window Snapping)" off \
-      caffeine "Caffeine (Disable System sleep)" off \
-      arduino "Arduino SDK" off \
-      cyberduck "Cyberduck – Serverbrowser" off \
-      docker "Docker Runtime" off \
-      google-chrome "Google Chrome (stable)" off \
-      google-chrome-canary "Google Chrome (Canary)" off\
-      firefox "Firefox (stable)" off \
-      firefox-developer-edition "Firefox (Developer-Edition)" off\
-      iterm2 "iTerm2 - the better terminal" off \
-      intellij-idea "IntelliJ IDEA" off \
-      java "Java (most recent)" off \
-      java8 "Java 8" off \
-      macdown "MacDown - A MarkDown Editor" off \
-      postman "Postman - API Testing Tool" off \
-      psequel "pSequel - PostgreSQL Client" off \
-      sequel-pro "Sequel Pro - mySQL Client" off \
-      slack "Slack" off \
-      spotify "Spotify" off \
-      tunnelblick "Tunnelblick VPN" off \
-      ultimaker-cura "Cura Slicer (3D-Printing)" off \
-      vagrant "Vagrant" off \
-      virtualbox "VirtualBox – VM Manager" off \
-      virtualbox-extension-pack "VirtualBox Extensions" off \
-      visual-studio-code "Visual Studio Code" off \
-      vlc "VLC - Video Lan Client" off \
-    3>&1 1>&2 2>&3)
+generate_checklist_from_config() {
+  local config_file="$1"
+  local checklist_options=""
+  
+  if [[ -f "$config_file" ]]; then
+    while IFS='|' read -r package display_name description; do
+      # Skip comments and empty lines
+      [[ "$package" =~ ^#.*$ ]] && continue
+      [[ -z "$package" ]] && continue
+      
+      checklist_options="$checklist_options $package \"$description\" off"
+    done < "$config_file"
+  fi
+  
+  echo "$checklist_options"
+}
 
-    # Only write file if something is selected
-    if [[ "${#apps}" > 0 ]]; then
-      chkRmExistingFile $CASKFILE
-      while read -r line; do
-        echo -e "$line" >> $CASKFILE
-      done <<< "$apps"
-      brew cask list $(cat $CASKFILE|grep -v "#") &>/dev/null || brew cask install $(cat $CASKFILE|grep -v "#")
-    fi
+show_cask_selection() {
+  local options=$(generate_checklist_from_config "$CASKFILE")
+  
+  if [[ -z "$options" ]]; then
+    whiptail --msgbox "No cask applications configured." 8 50
+    return 0
+  fi
+  
+  eval "apps=\$(whiptail --separate-output --title \"GUI Applications\" --checklist \"\\nSelect the apps you want to install:\\n\\n[spacebar] = toggle on/off\\n[tab] = switch to Buttons / List\" 0 0 0 --cancel-button Back --ok-button Install $options 3>&1 1>&2 2>&3)"
+  
+  if [ $? -eq 1 ] || [ $? -eq 255 ]; then return 0; fi
+  
+  if [[ "${#apps}" > 0 ]]; then
+    while read -r app; do
+      [[ -z "$app" ]] && continue
+      install_cask_app "$app"
+    done <<< "$apps"
+  fi
+}
 
-    if [ $? -eq 1 ] || [ $? -eq 255 ]; then return 0; fi
+show_brew_selection() {
+  local options=$(generate_checklist_from_config "$BREWFILE")
+  
+  if [[ -z "$options" ]]; then
+    whiptail --msgbox "No brew packages configured." 8 50
+    return 0
+  fi
+  
+  eval "packages=\$(whiptail --separate-output --title \"CLI Tools\" --checklist \"\\nSelect the packages you want to install:\\n\\n[spacebar] = toggle on/off\\n[tab] = switch to Buttons / List\" 0 0 0 --cancel-button Back --ok-button Install $options 3>&1 1>&2 2>&3)"
+  
+  if [ $? -eq 1 ] || [ $? -eq 255 ]; then return 0; fi
+  
+  if [[ "${#packages}" > 0 ]]; then
+    while read -r package; do
+      [[ -z "$package" ]] && continue
+      install_brew_package "$package"
+    done <<< "$packages"
+  fi
+}
 
-  elif [[ "$choice" == *"Brew"* ]]; then
-    brewPackages=$(whiptail --separate-output --title "Brew" --checklist "\nSelect the brew packages you want to install:\n\n[spacebar] = toggle on/off\n[tab] = switch to Buttons / List" 0 0 0 --cancel-button Back --ok-button Install \
-      autoconf "Automatic configure script builder" off \
-      automake "Tool for generating GNU Standards-compliant Makefiles" off \
-      bat "A cat clone with wings" off\
-      curl "Get a file from an HTTP, HTTPS or FTP server" off \
-      git "The complete git experience (no cut content!)" off \
-      git-flow "Extensions to follow Vincent Driessen's branching model" off \
-      httpd "Apache HTTPD" off \
-      mariadb "Drop-in replacement for MySQL" off \
-      mas "Mac App Store command-line interface" off \
-      maven "Java-based project management" off \
-      nvm "Manage multiple Node.js versions" off \
-      openssl "SSL/TLS cryptography library" off \
-      php "PHP (most recent)" off \
-      phpmyadmin "Web interface for MySQL and MariaDB" off \
-      sqlite "Command-line interface for SQLite" off \
-      ssh-copy-id "Add a public key to a remote machines authorized_keys file" off \
-      tmux "Terminal multiplexer" off \
-      tree "Display directories as trees (with optional color/HTML output)" off \
-      vim "Vi with many additional features" off \
-      wget "Internet file retriever" off \
-    3>&1 1>&2 2>&3)
+show_mas_selection() {
+  mas_install
+  
+  local options=""
+  if [[ -f "$MASFILE" ]]; then
+    while IFS='|' read -r app_id display_name description; do
+      [[ "$app_id" =~ ^#.*$ ]] && continue
+      [[ -z "$app_id" ]] && continue
+      
+      options="$options $app_id \"$display_name - $description\" off"
+    done < "$MASFILE"
+  fi
+  
+  if [[ -z "$options" ]]; then
+    whiptail --msgbox "No Mac App Store applications configured." 8 50
+    return 0
+  fi
+  
+  eval "apps=\$(whiptail --separate-output --title \"Mac App Store\" --checklist \"\\nSelect the apps you want to install:\\n\\n[spacebar] = toggle on/off\\n[tab] = switch to Buttons / List\" 0 0 0 --cancel-button Back --ok-button Install $options 3>&1 1>&2 2>&3)"
+  
+  if [ $? -eq 1 ] || [ $? -eq 255 ]; then return 0; fi
+  
+  if [[ "${#apps}" > 0 ]]; then
+    while read -r app_id; do
+      [[ -z "$app_id" ]] && continue
+      # Get display name from config
+      local display_name=$(grep "^$app_id|" "$MASFILE" | cut -d'|' -f2)
+      install_mas_app "$app_id" "$display_name"
+    done <<< "$apps"
+  fi
+}
 
-    # Only write file if something is selected
-    if [[ "${#brewPackages}" > 0 ]]; then
-      chkRmExistingFile $BREWFILE
-      while read -r line; do
-        echo -e "$line" >> $BREWFILE
-      done <<< "$brewPackages"
-      brew list $(cat $BREWFILE|grep -v "#") &>/dev/null || brew install $(cat $BREWFILE|grep -v "#")
-    fi
+show_fonts_selection() {
+  local options=$(generate_checklist_from_config "$FONTSFILE")
+  
+  if [[ -z "$options" ]]; then
+    whiptail --msgbox "No fonts configured." 8 50
+    return 0
+  fi
+  
+  eval "fonts=\$(whiptail --separate-output --title \"Fonts\" --checklist \"\\nSelect the fonts you want to install:\\n\\n[spacebar] = toggle on/off\\n[tab] = switch to Buttons / List\" 0 0 0 --cancel-button Back --ok-button Install $options 3>&1 1>&2 2>&3)"
+  
+  if [ $? -eq 1 ] || [ $? -eq 255 ]; then return 0; fi
+  
+  if [[ "${#fonts}" > 0 ]]; then
+    while read -r font; do
+      [[ -z "$font" ]] && continue
+      install_font "$font"
+    done <<< "$fonts"
+  fi
+}
 
-    if [ $? -eq 1 ] || [ $? -eq 255 ]; then return 0; fi
+show_special_packages_selection() {
+  local options=""
+  if [[ -f "$SPECIALFILE" ]]; then
+    while IFS='|' read -r package display_name description install_method; do
+      [[ "$package" =~ ^#.*$ ]] && continue
+      [[ -z "$package" ]] && continue
+      
+      options="$options $package \"$display_name - $description\" off"
+    done < "$SPECIALFILE"
+  fi
+  
+  if [[ -z "$options" ]]; then
+    whiptail --msgbox "No special packages configured." 8 50
+    return 0
+  fi
+  
+  eval "packages=\$(whiptail --separate-output --title \"Special Packages\" --checklist \"\\nSelect the packages you want to install:\\n\\n[spacebar] = toggle on/off\\n[tab] = switch to Buttons / List\" 0 0 0 --cancel-button Back --ok-button Install $options 3>&1 1>&2 2>&3)"
+  
+  if [ $? -eq 1 ] || [ $? -eq 255 ]; then return 0; fi
+  
+  if [[ "${#packages}" > 0 ]]; then
+    while read -r package; do
+      [[ -z "$package" ]] && continue
+      # Get install details from config
+      local line=$(grep "^$package|" "$SPECIALFILE")
+      local display_name=$(echo "$line" | cut -d'|' -f2)
+      local description=$(echo "$line" | cut -d'|' -f3)
+      local install_cmd=$(echo "$line" | cut -d'|' -f4)
+      install_special_package "$package" "$display_name" "$description" "$install_cmd"
+    done <<< "$packages"
+  fi
+}
 
-  elif [[ "$choice" == *"Components"* ]]; then
-    additionalCompsConf=$(whiptail --title "Additional Components & Configurations" --menu "\nSelect the components and configs you want to install:\n\n[enter] = install\n[tab] = switch to Buttons / List" 0 0 0 --cancel-button Back --ok-button Install \
-    "rvm    "     "Manage multiple Ruby Versions" \
-    3>&1 1>&2 2>&3)
-    if [ $? -eq 1 ] || [ $? -eq 255 ]; then return 0; fi
-    case "$additionalCompsConf" in
-      rvm\ *) rvm_install;;
-      "") return ;;
-      *) whiptail --msgbox "A not supported option was selected (probably a programming error):\\n  \"$additionalCompsConf\"" 8 80 ;;
-    esac
+show_direct_downloads_selection() {
+  local options=""
+  if [[ -f "$DIRECTFILE" ]]; then
+    while IFS='|' read -r name display_name description url install_cmd; do
+      [[ "$name" =~ ^#.*$ ]] && continue
+      [[ -z "$name" ]] && continue
+      
+      options="$options $name \"$display_name - $description\" off"
+    done < "$DIRECTFILE"
+  fi
+  
+  if [[ -z "$options" ]]; then
+    whiptail --msgbox "No direct downloads configured." 8 50
+    return 0
+  fi
+  
+  eval "downloads=\$(whiptail --separate-output --title \"Direct Downloads\" --checklist \"\\nSelect the tools you want to install:\\n\\n[spacebar] = toggle on/off\\n[tab] = switch to Buttons / List\" 0 0 0 --cancel-button Back --ok-button Install $options 3>&1 1>&2 2>&3)"
+  
+  if [ $? -eq 1 ] || [ $? -eq 255 ]; then return 0; fi
+  
+  if [[ "${#downloads}" > 0 ]]; then
+    while read -r name; do
+      [[ -z "$name" ]] && continue
+      # Get download details from config
+      local line=$(grep "^$name|" "$DIRECTFILE")
+      local display_name=$(echo "$line" | cut -d'|' -f2)
+      local description=$(echo "$line" | cut -d'|' -f3)
+      local url=$(echo "$line" | cut -d'|' -f4)
+      local install_cmd=$(echo "$line" | cut -d'|' -f5)
+      install_direct_download "$name" "$display_name" "$description" "$url" "$install_cmd"
+    done <<< "$downloads"
   fi
 }
