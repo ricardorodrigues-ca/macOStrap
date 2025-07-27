@@ -6,9 +6,7 @@ Fast macOS setup and configuration via Whiptail
 ## Installation
 
 ### Bootstrap Installation (Recommended)
-```bash
-curl -fsSL https://raw.githubusercontent.com/ricardorodrigues-ca/macOStrap/refs/heads/master/bootstrap.sh | bash
-```
+```/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/ricardorodrigues-ca/macOStrap/refs/heads/master/bootstrap.sh)"```
 
 ### Local Installation
 Run `./install.sh` to install homebrew and whiptail and launch the ui.
