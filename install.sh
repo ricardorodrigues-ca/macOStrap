@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Project repo url
-GITHUB_REPO_URL="https://github.com/dennisausbremen/macOStrap/"
+# Project info
+VERSION="2.0.0"
+GITHUB_REPO_URL="https://github.com/ricardorodrigues-ca/macOStrap"
 
 # Automatically remove temporary directory when exits
 trap removeBrewInstallDirs EXIT

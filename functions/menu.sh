@@ -115,10 +115,18 @@ generate_direct_checklist_with_select_all() {
 
 show_about() {
   whiptail --title "About macOStrap" --msgbox "
+  \\nmacOStrap v$VERSION
+  \\n
   \\nThis tool provides some basic configs, apps and packages to get you setup and productive quickly.
   \\n
-  \\nVisit the following github repo for more information and feel free to leave feedback and file an issue in case you encounter any bugs:
-  - Git Repo: $GITHUB_REPO_URL" 20 80
+  \\nFeatures:
+  - Select All option for bulk installations
+  - Installation tracking and status memory
+  - 7 categories of software packages
+  - Interactive whiptail-based UI
+  \\n
+  \\nVisit the GitHub repository for more information and to report issues:
+  $GITHUB_REPO_URL" 22 80
 }
 
 show_main_menu() {
