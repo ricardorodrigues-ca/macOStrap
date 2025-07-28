@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Installation tracking
+INSTALLED_PACKAGES_FILE="$HOME/.macoststrap_installed"
+
 homebrew_install() {
   echo "Installing homebrew..."
   if [ ! -f /usr/local/bin/brew ]; then
@@ -53,26 +56,46 @@ install_from_config() {
 install_cask_app() {
   local package="$1"
   echo "Installing $package via homebrew cask..."
-  brew install --cask "$package" 2>/dev/null || echo "Failed to install $package"
+  if brew install --cask "$package" 2>/dev/null; then
+    echo "cask:$package" >> "$INSTALLED_PACKAGES_FILE"
+    echo "Successfully installed $package"
+  else
+    echo "Failed to install $package"
+  fi
 }
 
 install_brew_package() {
   local package="$1"
   echo "Installing $package via homebrew..."
-  brew install "$package" 2>/dev/null || echo "Failed to install $package"
+  if brew install "$package" 2>/dev/null; then
+    echo "brew:$package" >> "$INSTALLED_PACKAGES_FILE"
+    echo "Successfully installed $package"
+  else
+    echo "Failed to install $package"
+  fi
 }
 
 install_mas_app() {
   local app_id="$1"
   local display_name="$2"
   echo "Installing $display_name via Mac App Store..."
-  mas install "$app_id" 2>/dev/null || echo "Failed to install $display_name"
+  if mas install "$app_id" 2>/dev/null; then
+    echo "mas:$app_id" >> "$INSTALLED_PACKAGES_FILE"
+    echo "Successfully installed $display_name"
+  else
+    echo "Failed to install $display_name"
+  fi
 }
 
 install_font() {
   local package="$1"
   echo "Installing $package..."
-  brew install --cask "$package" 2>/dev/null || echo "Failed to install $package"
+  if brew install --cask "$package" 2>/dev/null; then
+    echo "font:$package" >> "$INSTALLED_PACKAGES_FILE"
+    echo "Successfully installed $package"
+  else
+    echo "Failed to install $package"
+  fi
 }
 
 install_special_package() {
@@ -81,7 +104,12 @@ install_special_package() {
   local description="$3"
   local install_cmd="$4"
   echo "Installing $display_name..."
-  eval "$install_cmd" 2>/dev/null || echo "Failed to install $display_name"
+  if eval "$install_cmd" 2>/dev/null; then
+    echo "special:$package" >> "$INSTALLED_PACKAGES_FILE"
+    echo "Successfully installed $display_name"
+  else
+    echo "Failed to install $display_name"
+  fi
 }
 
 install_direct_download() {
@@ -93,18 +121,31 @@ install_direct_download() {
   
   echo "Installing $display_name..."
   
+  local success=false
   if [[ "$install_cmd" == npm* ]]; then
     # For npm packages, just run the install command
-    eval "$install_cmd" 2>/dev/null || echo "Failed to install $display_name"
+    if eval "$install_cmd" 2>/dev/null; then
+      success=true
+    fi
   else
     # For downloads, get the file first
     local filename=$(basename "$url")
     curl -L -o "/tmp/$filename" "$url" 2>/dev/null
     if [[ -f "/tmp/$filename" ]]; then
-      cd /tmp && eval "$install_cmd" 2>/dev/null || echo "Failed to install $display_name"
+      if cd /tmp && eval "$install_cmd" 2>/dev/null; then
+        success=true
+      fi
       rm -f "/tmp/$filename"
     else
       echo "Failed to download $display_name"
+      return 1
     fi
+  fi
+  
+  if [[ "$success" == "true" ]]; then
+    echo "direct:$name" >> "$INSTALLED_PACKAGES_FILE"
+    echo "Successfully installed $display_name"
+  else
+    echo "Failed to install $display_name"
   fi
 }

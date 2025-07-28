@@ -45,8 +45,10 @@ The modernized tool organizes installations into seven main categories:
 - `whiptail_install()` - Installs newt (whiptail) for the UI (`functions/installer.sh:14`)
 - `mas_install()` - Installs Mac App Store CLI (`functions/installer.sh:29`)
 - `show_main_menu()` - Primary navigation interface (`functions/menu.sh:26`)
-- `install_*()` functions - Specialized installers for each package type
-- `generate_checklist_from_config()` - Dynamically builds whiptail menus from config files
+- `install_*()` functions - Specialized installers for each package type with installation tracking
+- `generate_checklist_with_select_all()` - Builds whiptail menus with "Select All" option and installation status
+- `is_package_installed()` - Checks if a package has been previously installed using tracking file
+- Installation tracking via `~/.macoststrap_installed` file
 
 ### Configuration File Format
 All `.conf` files use pipe-delimited format:
@@ -64,7 +66,16 @@ All `.conf` files use pipe-delimited format:
 - Error handling uses return codes and conditional checks
 - User interaction relies heavily on whiptail for consistent UI
 - Installation verification checks if tools are already present before installing
-- Dynamic menu generation from configuration files
+- Dynamic menu generation from configuration files with "Select All" functionality
+- Package installation tracking to remember successful installations
+- Already installed packages show `[INSTALLED]` status and are pre-checked in menus
+
+## Features
+- **"Select All" Option**: Each category menu includes a "Select All" option at the top to install all packages in that category
+- **Installation Memory**: Successfully installed packages are tracked in `~/.macoststrap_installed` and show as `[INSTALLED]` with pre-checked status
+- **Smart Installation**: Skips packages that are already installed when using "Select All" or individual selections
+- **Interactive UI**: Whiptail-based menus with spacebar toggle and tab navigation
+- **Configuration-Driven**: Easy to modify package lists by editing config files
 
 ## Development Notes
 - No traditional build/test/lint commands - this is a pure bash script project
@@ -73,3 +84,4 @@ All `.conf` files use pipe-delimited format:
 - External dependencies: homebrew, whiptail (newt), git, mas (for App Store)
 - Package lists are maintained in separate config files for easy updates
 - Bootstrap script enables one-command installation from any clean macOS system
+- Installation tracking file format: `type:package_name` (e.g., `brew:git`, `cask:docker`, `mas:123456`)

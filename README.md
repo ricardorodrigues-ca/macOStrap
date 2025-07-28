@@ -3,6 +3,12 @@ Fast macOS setup and configuration via Whiptail
 
 ## This installer enables you to get up and running quickly with a simple UI.
 
+## Features
+- **"Select All" Option**: Each category includes a "Select All" option to install all packages at once
+- **Installation Memory**: Tracks installed packages and shows their status across sessions
+- **Smart Installation**: Skips already installed packages automatically
+- **Interactive Menus**: Easy-to-use whiptail interface with spacebar toggle and tab navigation
+
 ## Installation
 
 ### Bootstrap Installation (Recommended)
@@ -15,13 +21,13 @@ Run `./install.sh` to install homebrew and whiptail and launch the ui.
 - macOS 11.0+ (Big Sur) or later
 
 ## Categories
-macOStrap lets you choose between the following categories and contains the following...
+macOStrap lets you choose between the following categories and contains the following packages. Already installed packages will show as `[INSTALLED]` and be pre-selected in the menus.
 
 ### GUI Applications
 | Name | Description |
 |------|-------------|
 | 1Password | Password Manager |
-| Arduino SDK | Arduino development environment |
+| Arduino IDE | Arduino development environment |
 | Cursor | AI-powered code editor |
 | Docker Desktop | Docker containerization platform |
 | Firefox | Firefox web browser |
